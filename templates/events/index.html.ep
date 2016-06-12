@@ -1,0 +1,65 @@
+% layout 'default';
+
+% use Rplus::Model::Event::Manager;
+
+<div class="row">
+<div class="col-lg-12">
+  <form role="search">
+    <div class="form-group">
+      <span class="twitter-typeahead" style="position: relative; display: inline-block; width: 100%">
+        <input class="tt-hint" type="text" autocomplete="off" spellcheck="off" disabled="" style="position: absolute; top: 0px; left: 0px; border-color: transparent; box-shadow: none; background-attachment: scroll; background-clip: border-box; background-color: rgb(255, 255, 255); background-image: none; background-origin: padding-box; background-size: auto; background-position: 0% 0%; background-repeat: repeat repeat;">
+          <input type="text" class="form-control input-sm tt-query" id="searchQuery" name="q" placeholder="Search" autocomplete="off" x-webkit-speech="" spellcheck="false" dir="auto" style="position: relative; vertical-align: top; background-color: transparent;">
+          <span style="position: absolute; left: -9999px; visibility: hidden; white-space: nowrap; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11.818181991577148px; font-style: normal; font-variant: normal; font-weight: 400; word-spacing: 0px; letter-spacing: 0px; text-indent: 0px; text-rendering: auto; text-transform: none;"> 
+          </span>
+          <span class="tt-dropdown-menu" style="position: absolute; top: 100%; left: 0px; z-index: 100; display: none;"></span>
+      </span>
+    </div>
+  </form>
+</div>
+</div>
+
+<div class="row">
+  <div class="col-lg-12">
+    <div class="table-responsive" id="accountsTableWrapper" style="height: 349.1761474609375px;">
+      <table class="table table-bordered table-condensed table-striped table-hover" id="accountsTable">
+        <thead>
+          <tr>        
+            <th class="" data-index="0" data-sortable="true">&nbsp;
+              <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
+              <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
+            </th>
+            
+            <th class="" data-index="1" data-sortable="false">Date
+              <span class="pull-right hidden glyphicon glyphicon-arrow -down" data-order="asc"></span>
+              <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
+            </th>
+            
+            <th class="" data-index="2" data-sortable="true">Account&nbsp;
+              <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
+              <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
+            </th>
+            
+            <th class="" data-index="3" data-sortable="true">Event&nbsp;
+              <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
+              <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
+            </th>
+          </tr>
+        </thead>
+        
+        <tbody>
+          % my $iter = Rplus::Model::Event::Manager->get_objects_iterator(select => 'id, date, account, text', sort_by => 'id desc');
+          % while (my $x = $iter->next) {
+            <tr  class="" data-id="<%= $x->id %>" class="">
+            <td class=""><span class="glyphicon glyphicon-unchecked"></span></td>
+            <td class="" data-index="1" data-sortable="true"><%= $x->date %></td>
+            <td class="" data-index="3" data-sortable="true"><%= $x->account %></td>
+            <td class="" data-index="4" data-sortable="true"><%= $x->text %></td>
+          </tr>
+          % }
+
+        </tbody>
+          
+    </table>
+    </div>
+  </div>
+</div>

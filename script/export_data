@@ -1,0 +1,312 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use Mojo::UserAgent;
+
+use Rplus::Modern;
+
+use Rplus::Model::RuntimeParam;
+use Rplus::Model::RuntimeParam::Manager;
+use Rplus::Model::User;
+use Rplus::Model::User::Manager;
+use Rplus::Model::Client;
+use Rplus::Model::Client::Manager;
+use Rplus::Model::Subscription;
+use Rplus::Model::Subscription::Manager;
+use Rplus::Model::Realty;
+use Rplus::Model::Realty::Manager;
+use Rplus::Model::Photo;
+use Rplus::Model::Photo::Manager;
+
+use Rplus::Util::Config;
+
+use JSON;
+
+use Data::Dumper;
+
+say 'export data';
+export_data();
+
+sub export_data {
+
+    # Fields to save
+    my @fields = (
+        'type_code', 'offer_type_code', 'state_code',
+        'address_object_id', 'house_num', 'house_type_id', 'ap_num', 'ap_scheme_id',
+        'rooms_count', 'rooms_offer_count', 'room_scheme_id',
+        'floor', 'floors_count', 'levels_count', 'condition_id', 'balcony_id', 'bathroom_id',
+        'square_total', 'square_living', 'square_kitchen', 'square_land', 'square_land_type',
+        'description', 'owner_info', 'owner_price', 'work_info', 'agent_id', 'agency_price',
+        'latitude', 'longitude', 'sublandmark_id', 'add_date', 'last_seen_date', 'change_date',
+        'source_media_text', 'source_media_id', 'source_url',
+    );
+
+    my $ua = Mojo::UserAgent->new;
+
+    my $config = Rplus::Util::Config::get_config();
+    my $subdomain = $config->{subdomain};
+
+    # options
+    if (1 != 2) {
+        say 'exporting options';
+
+        my $p_not = from_json(Rplus::Model::RuntimeParam->new(key => 'notifications')->load()->value);
+        my $p_imp = from_json(Rplus::Model::RuntimeParam->new(key => 'import')->load()->value);
+        my $p_exp = from_json(Rplus::Model::RuntimeParam->new(key => 'export')->load()->value);
+
+        my $options = {
+            notifications => $p_not,
+            import => $p_imp,
+            export => $p_exp,
+        };
+
+        my $tx = $ua->get('http://account361.rplusmgmt.com/backdoor/add_options',
+            form => {
+                account_name => $subdomain,
+                options_str => to_json($options),
+            },
+        );
+
+        if (my $res = $tx->success) {
+            my $data = $res->json;
+            say 'done! options id: ' .  $data->{options_id};
+        } else {
+            say 'failed';
+        }
+    }
+
+    # users
+    if (1 != 2) {
+        say 'exporting users';
+
+        my $user_iter = Rplus::Model::User::Manager->get_objects_iterator(query => [delete_date => undef]);
+        while (my $user = $user_iter->next) {
+            say 'user ' . $user->id;
+            my $sip = from_json($user->ip_telephony);
+            my $tx = $ua->get('http://account361.rplusmgmt.com/backdoor/add_user',
+                form => {
+                    account_name => $subdomain,
+
+                    login => $user->login,
+                    password => $user->password,
+                    role => $user->role,
+                    name => $user->name,
+                    phone_num => $user->phone_num,
+                    description => $user->description,
+                    public_name => $user->public_name,
+                    public_phone_num => $user->public_phone_num,                
+                    photo_url => $user->photo_url ? $user->photo_url : '',
+                    subordinates => [$user->subordinate],
+
+                    sip_host => $sip->{sip_host} ? $sip->{sip_host} : '_',
+                    sip_login => $sip->{sip_login} ? $sip->{sip_login} : '_',
+                    sip_password => $sip->{sip_password} ? $sip->{sip_password} : '_',
+                },
+            );
+
+            my $new_user_id = undef;
+            if (my $res = $tx->success) {
+                my $data = $res->json;
+                $new_user_id = $data->{user_id};
+                say 'done! user_id: ' . $new_user_id;
+            } else {
+                say 'failed';
+            }
+
+            # clients
+            if ($new_user_id) {
+                say 'exporting clients';
+                my $client_iter = Rplus::Model::Client::Manager->get_objects_iterator(query => [agent_id => $user->id, delete_date => undef]);
+                while (my $client = $client_iter->next) {
+                    say 'client ' . $client->id;
+                    my $tx = $ua->get('http://account361.rplusmgmt.com/backdoor/add_client',
+                        form => {
+                            account_name => $subdomain,
+
+                            agent_id => $new_user_id,
+                            name => $client->name,
+                            phone_num => $client->phone_num,
+                            email => $client->email,
+                            skype => $client->skype,
+                            description => $client->description,
+                            subscription_offer_types => $client->subscription_offer_types,
+                            send_owner_phone => $client->send_owner_phone,
+                        },
+                    );
+                    if (my $res = $tx->success) {
+                        my $data = $res->json;
+                        say 'done! client_id: ' .  $data->{client_id};
+
+                        my $new_client_id = $data->{client_id};
+
+                        #subscriptions
+
+                        my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(query => [client_id => $client->id,  delete_date => undef]);
+                        while (my $subscription = $subscription_iter->next) {
+                            say 'subscription ' . $subscription->id;
+                            say $subscription->add_date;
+                            my $tx = $ua->get('http://account361.rplusmgmt.com/backdoor/add_subscription',
+                                form => {
+                                    account_name => $subdomain,
+
+                                    user_id => $new_user_id,
+                                    client_id => $new_client_id,
+
+                                    offer_type_code => $subscription->offer_type_code,
+                                    'queries[]' => [$subscription->queries],
+                                    add_date => $subscription->add_date,
+                                    end_date => $subscription->end_date,
+                                    realty_limit => $subscription->realty_limit,
+                                    send_owner_phone => $subscription->send_owner_phone,
+                                }
+                            );
+                            if (my $res = $tx->success) {
+                                my $data = $res->json;
+                                say 'done! subscription_id: ' .  $data->{subscription_id};
+                            } else {
+                                say 'failed';
+                            }
+                        }
+
+                    } else {
+                        say 'failed';
+                    }
+                }
+
+                say 'exporting realty';
+
+                my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => [agent_id => $user->id, 'state_code' => 'work', delete_date => undef]);
+                while (my $realty = $realty_iter->next) {
+                    my @photos = ();
+                    my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $realty->id, delete_date => undef]);
+                    while (my $photo = $photo_iter->next) {
+                        push @photos, $photo->filename;
+                        push @photos, $photo->thumbnail_filename;
+                    }                    
+                    my $form = {
+                        account_name => $subdomain,
+                        'owner_phones[]' => [$realty->owner_phones],
+                        'export_media[]' => [$realty->export_media],
+                        'photos[]' => [@photos],
+                    };
+                    for (@fields) {
+                        $form->{$_} = $realty->$_;
+                    }
+                    $form->{'agent_id'} = $new_user_id;
+
+                    say Dumper $form;
+
+                    my $tx = $ua->get('http://account361.rplusmgmt.com/backdoor/add_realty',
+                        form => $form,
+                    );
+                    if (my $res = $tx->success) {
+                        my $data = $res->json;
+                        say 'done! realty_id: ' .  $data->{realty_id};
+                    } else {
+                        say 'failed';
+                    }
+                }
+            }
+        }
+    }
+
+    if (1 != 2) {
+        # неназначенные клиенты
+        say 'exporting clients';
+        my $client_iter = Rplus::Model::Client::Manager->get_objects_iterator(query => [agent_id => undef, delete_date => undef]);
+        while (my $client = $client_iter->next) {
+            say 'client ' . $client->id;
+            my $tx = $ua->get('http://account361.rplusmgmt.com/backdoor/add_client',
+                form => {
+                    account_name => $subdomain,
+                    
+                    name => $client->name,
+                    phone_num => $client->phone_num,
+                    email => $client->email,
+                    skype => $client->skype,
+                    description => $client->description,
+                    subscription_offer_types => $client->subscription_offer_types,
+                    send_owner_phone => $client->send_owner_phone,
+                },
+            );
+            if (my $res = $tx->success) {
+                my $data = $res->json;
+                say 'done! client_id: ' .  $data->{client_id};
+
+                my $new_client_id = $data->{client_id};
+
+                #subscriptions
+
+                my $subscription_iter = Rplus::Model::Subscription::Manager->get_objects_iterator(query => [client_id => $client->id,  delete_date => undef]);
+                while (my $subscription = $subscription_iter->next) {
+                    say 'subscription ' . $subscription->id;
+                    say $subscription->add_date;
+                    my $tx = $ua->get('http://account361.rplusmgmt.com/backdoor/add_subscription',
+                        form => {
+                            account_name => $subdomain,
+
+                            user_id => undef,
+                            client_id => $new_client_id,
+                            
+                            offer_type_code => $subscription->offer_type_code,
+                            'queries[]' => [$subscription->queries],
+                            add_date => $subscription->add_date,
+                            end_date => $subscription->end_date,
+                            realty_limit => $subscription->realty_limit,
+                            send_owner_phone => $subscription->send_owner_phone,
+                        }
+                    );
+                    if (my $res = $tx->success) {
+                        my $data = $res->json;
+                        say 'done! subscription_id: ' .  $data->{subscription_id};
+                    } else {
+                        say 'failed';
+                    }
+                }
+
+            } else {
+                say 'failed';
+            }
+        }        
+    }
+
+    if (1 != 2) {
+        say 'exporting realty';
+
+        my $realty_iter = Rplus::Model::Realty::Manager->get_objects_iterator(query => ['state_code' => 'suspended', delete_date => undef]);
+        while (my $realty = $realty_iter->next) {
+            my @photos = ();
+            my $photo_iter = Rplus::Model::Photo::Manager->get_objects_iterator(query => [realty_id => $realty->id, delete_date => undef]);
+            while (my $photo = $photo_iter->next) {
+                push @photos, $photo->filename;
+                push @photos, $photo->thumbnail_filename;
+            }                    
+            my $form = {
+                account_name => $subdomain,
+                'owner_phones[]' => [$realty->owner_phones],
+                'export_media[]' => [$realty->export_media],
+                'photos[]' => [@photos],
+            };
+
+            for (@fields) {
+                $form->{$_} = $realty->$_;
+            }
+
+            $form->{agent_id} = undef;
+
+            say Dumper $form;
+
+            my $tx = $ua->get('http://account361.rplusmgmt.com/backdoor/add_realty',
+                form => $form,
+            );
+            if (my $res = $tx->success) {
+                my $data = $res->json;
+                say 'done! realty_id: ' .  $data->{realty_id};
+            } else {
+                say 'failed';
+            }
+        }        
+    }
+}

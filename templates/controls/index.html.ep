@@ -1,0 +1,11 @@
+% layout 'default';
+
+% #use RplusAccounts::Controls;
+
+<div class="row">
+  <div class="col-12 col-sm-12 col-lg-12">
+    <div class="jumbotron">
+      
+    </div>
+  </div>
+</div>

@@ -1,0 +1,25 @@
+#!/usr/bin/env perl
+
+use FindBin;
+BEGIN { unshift @INC, "$FindBin::Bin/../lib" }
+
+use Rplus::Model::Account;
+use Rplus::Model::Account::Manager;
+
+use Rplus::Modern;
+use JSON;
+use Mojo::UserAgent;
+
+my $ua = Mojo::UserAgent->new;
+
+my $account_iter = Rplus::Model::Account::Manager->get_objects_iterator(query => ['!del_date' => undef], sort_by => 'id');
+while (my $account = $account_iter->next) {
+
+    if ($account->email) {
+        my $tx = $ua->get('http://ctrl.rplusmgmt.com/backdoor/delete_account', form => {
+            email => $account->email,
+        });
+    }
+}
+
+1;

@@ -1,0 +1,35 @@
+#!/usr/bin/env perl
+use 5.014;
+use FindBin;
+BEGIN { unshift @INC, "$FindBin::Bin/../lib" }
+
+use Rplus::Model::Account;
+use Rplus::Model::Account::Manager;
+
+use Rplus::Modern;
+use JSON;
+
+my @acc_num = (354, 361, 389, 440, 451, 453, 454, 457, 458, 471, 472, 494, 506, 519, 520, 521, 522, 531, 532, 535, 536, 540, 541, 542, 545, 548, 549);
+my @accs = map { 'account' . $_ } @acc_num;
+push @accs, 'pcn';
+push @accs, 'zodiac';
+push @accs, 'makler';
+push @accs, 'dev';
+
+my $account_iter = Rplus::Model::Account::Manager->get_objects_iterator(query => [del_date => undef], sort_by => 'id');
+while (my $account = $account_iter->next) {
+
+    my $subdomain = $account->subdomain;
+    #eval {
+        if ($subdomain ~~ @accs) {
+
+	} else {
+	    say $subdomain;
+            $account->del_date('now()');
+            $account->save;
+        }
+    #} or do {
+    #}
+}
+
+1;

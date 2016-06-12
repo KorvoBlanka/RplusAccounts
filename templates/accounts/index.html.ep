@@ -1,0 +1,764 @@
+% layout 'default';
+
+% use Rplus::Model::Account::Manager;
+
+% content_for header => begin
+<style type="text/css">
+  #accountCard_modal .modal-dialog {
+    width: 720px;
+  }
+  
+  #accountsTableWrapper {
+    overflow: scroll;
+  }
+
+  #accountsTable {
+    cursor: pointer;
+    -webkit-user-select: none;
+            user-select: none;
+  }
+
+  #accountsTable > tbody > tr > td {
+    text-align: center;
+  }
+
+  #accountsTable > tbody > tr.selected > td {
+    background-color: #0088cc !important;
+    color: #ffffff;
+  }
+
+  #accountsTable > tbody > tr.selected:hover > td {
+    background-color: #0082c7 !important;
+    color: #ffffff;
+  }
+
+  #accountsTable > tbody > tr.selected > td > a {
+    color: #ffffff;
+  }
+  
+  #accountsTable > tbody > tr.blocked > td {
+    background-color: #ff8888;
+    color: #ffffff;
+  }
+
+  #accountsTable > tbody > tr.blocked:hover > td {
+    background-color: #ffaaaa;
+    color: #ffffff;
+  }
+
+</style>
+<style = "text/css">
+
+    body {
+        overflow: hidden;
+    }
+
+    #user-list-bg {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 9000;
+    }
+    
+    #user-list {
+        position: fixed;
+        width: 800px;
+        height: 400px;
+        left: 50%;
+        top: 50%;
+        margin-left: -400px;
+        margin-top: -200px;
+        background-color: #fff;
+        box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      
+        overflow: scroll;
+    }
+    
+    .veil {
+      background-color: rgba(0,0,0,0.5);
+      z-index: 1001;
+    }
+    
+    .pwd-reset-btn {
+      float: right;
+      border-radius: 50%;
+      background-color: #f00;
+      color: #fff;
+      width: 20px;
+      text-align: center;
+      cursor: pointer;
+    }
+</style>
+<style>
+    .cmenu-tag-group {
+        height: 22px;
+        display: block;
+    }
+
+    .color-tag {
+        float: right;
+        height: 12px;
+        width: 12px;
+        border-radius: 50%;
+        margin: 3px;
+    }
+  .tag-1 {
+    background: #fd7b7e;
+    border: 1px solid #d9585c;
+  }
+  .tag-2 {
+    background: #febc46;
+    border: 1px solid #e99532;
+  }
+  .tag-3 {
+    background: #f4e54d;
+    border: 1px solid #d3c53b;
+  }
+  .tag-4 {
+    background: #b4e042;
+    border: 1px solid #a5bd59;
+  }
+  .tag-5 {
+    background: #83c9fc;
+    border: 1px solid #6ea1bc;
+  }
+  .tag-6 {
+    background: #e4a6fc;
+    border: 1px solid #d770f9;
+  }
+  .tag-7 {
+    background: #c8c8c8;
+    border: 1px solid #a5a5a5;
+  }
+</style>
+<link rel="stylesheet" href="/css/context.css">
+% end
+
+% content_for javascript => begin
+<script type="application/javascript" src="/js/contextmenu/context.js"></script>
+
+<script type="application/javascript">
+  "use strict";
+  (function () {
+    var dc_tid;
+    var $modal, $form;
+    var $addSumModal, $addSumForm;
+    
+    $('#accountsTable > tbody').on('mousedown', 'tr', function (e) {
+    var $this = $(this);
+    var id = $this.data('id');
+    switch (event.which) {
+        case 1:   // lmb
+        dc_tid = setTimeout(function() { 
+              var was_selected = $this.hasClass('selected');
+              var $selected = $('#accountsTable > tbody > tr.selected');
+              $selected.removeClass('selected');
+              if (!was_selected) {
+                $this.addClass('selected');
+              }
+          }, 150);
+          break;
+        case 2:    // mmb
+          break;
+        case 3:    // rmb
+          var $selected = $('#accountsTable > tbody > tr.selected');
+          $selected.removeClass('selected');
+          $this.addClass('selected');
+          break;
+        default:
+      }
+    });
+  
+    function createAccountCard() {
+      $('#accountCard_addDate').text(new Date());
+      $('#accountCard_modalLabel').text('New account');
+      $(':input', $modal).val(null);
+      $modal.modal('show');
+    }
+
+    function openAccountCard(id) {
+      $.ajax({
+        type: "POST",
+        url: "/api/account/get",
+        data: {id :id},
+      })
+        .done(function (data, textStatus, jqXHR) {
+          $(':input', $modal).val(null);
+          for (var x in data) {
+            $('[name="' + x + '"]:input', $modal).val(data[x]);
+          }
+          $('#accountCard_addDate').text(data.add_date);
+          $('#accountCard_modalLabel').text(data.email);
+          $modal.modal('show');
+        })
+        .fail(function (jqXHR, textStatus, errorThrown) {
+          alert('Cannot open account card');
+        });
+    }
+    
+    function openAddSumCard(id) {       
+        $('#addSum_inputId').val(id);
+        $('#addSum_inputSum').val('');
+
+        $addSumModal.modal('show');
+    }
+
+    function initAccountSave() {
+      $form.submit(function (e) {
+        e.preventDefault();
+
+        var formData = {};
+        var formArray = $(this).serializeArray();
+        for (var i = 0; i < formArray.length; i++) {
+          var x = formArray[i];
+          formData[x.name] = x.value || null;
+        }
+        $.ajax({
+          type: "POST",
+          url: "/api/account/save",
+          data: formData
+        })
+          .done(function (data) {
+            if (data.status == 'success') {
+              $modal.modal('hide');
+              location.reload();
+            }
+          })
+          .fail(function (jqXHR, textStatus, errorThrown) {
+            alert('An error occurred while saving user.');
+          })
+        ;
+      });
+    }
+
+    function initAddSum() {
+      $addSumForm.submit(function (e) {
+        e.preventDefault();
+
+        var formData = {};
+        var formArray = $(this).serializeArray();
+        for (var i = 0; i < formArray.length; i++) {
+          var x = formArray[i];
+          formData[x.name] = x.value || null;
+        }
+        $.ajax({
+          type: "POST",
+          url: "/api/account/add_sum",
+          data: formData
+        })
+          .done(function (data) {
+            if (data.status == 'success') {
+              $addSumModal.modal('hide');
+              location.reload();
+            }
+          })
+          .fail(function (jqXHR, textStatus, errorThrown) {
+            alert('An error occurred while processing request.');
+          })
+        ;
+      });
+    }
+  
+    function deleteAccount(id) {
+        $.ajax({
+          type: "POST",
+          url: "/api/account/delete",
+          data: {id: id,}
+        })
+          .done(function (data) {
+            if (data.status == 'success') {
+              alert('Аккаунт удален');
+              location.reload();
+            }
+          })
+          .fail(function (jqXHR, textStatus, errorThrown) {
+            alert('An error occurred while processing request.');
+          })
+        ;    
+    }
+  
+    $( "#accountsTable > tbody > tr" ).dblclick(function() {
+        clearTimeout(dc_tid);
+        var $this = $(this);
+        $this.addClass('selected');
+        openAccountCard($this.data('id'));
+    });
+  
+    $(function () {
+    
+        function createContextMenu() {       
+          var context_cb = function(e){};
+          
+          context.init({preventDoubleContext: true, compress: true, above: 'auto',}, context_cb);
+          context.attach('#accountsTable', [
+            {text: '<span class="glyphicon glyphicon-folder-open"></span>&nbsp&nbspOpen', element_id: 'el_open', data_action: 'account-open',},
+            {text: '<span class="glyphicon glyphicon-trash"></span>&nbsp&nbspDelete', element_id: 'el_delete', data_action: 'account-delete', data_val: "",},
+            {divider: true},
+            {text: '<span class="glyphicon glyphicon-user"></span>&nbsp&nbspUsers', element_id: 'el_users', data_action: 'account-list-users', data_val: "",},
+            {text: '<span class="glyphicon glyphicon-usd"></span>&nbsp&nbspAdd sum', element_id: 'el_addsum', data_action: 'account-add-sum', data_val: "",},
+            {divider: true},
+            {header: '&nbspТеги...'},
+            {header:  // '+' to concat strings, '' - to match last +
+            '<span class="cmenu-tag-group">' +
+              '<span class="color-tag tag-1" data-action="set-color_tag" data-val="1"></span>' + 
+              '<span class="color-tag tag-2" data-action="set-color_tag" data-val="2"></span>' + 
+              '<span class="color-tag tag-3" data-action="set-color_tag" data-val="3"></span>' + 
+              '<span class="color-tag tag-4" data-action="set-color_tag" data-val="4"></span>' + 
+              '<span class="color-tag tag-5" data-action="set-color_tag" data-val="5"></span>' + 
+              '<span class="color-tag tag-6" data-action="set-color_tag" data-val="6"></span>' + 
+              '<span class="color-tag tag-7" data-action="set-color_tag" data-val="7"></span>' + 
+            '</span>'},
+          ]);
+        }
+        
+        createContextMenu();
+
+        $('[data-action="set-color_tag"]').click(function (e) {
+            var $this = $(this);
+            var val = $(this).data('val');
+            var $selected = $('.selected').first();
+            var id = $selected.data('id');
+            
+            $.ajax({
+              type: "POST",
+              url: "/api/account/set_color_tag",
+              data: {
+                  id: id,
+                  color_tag: val,
+              }
+            })
+              .done(function (data) {
+                if (data.status == 'success') {
+                    var old_tag = $('#tag_for_' + id).data('ct');
+                    console.log(old_tag);
+                    $('#tag_for_' + id).removeClass('tag-' + old_tag);
+                    $('#tag_for_' + id).addClass('tag-' + data.color_tag);
+                    $('#tag_for_' + id).data('ct', data.color_tag);
+                }
+              })
+              .fail(function (jqXHR, textStatus, errorThrown) {
+                alert('An error occurred while processing request.');
+              })
+            ;
+        });
+      
+      $('[data-action="account-delete"]').click(function (e) {
+        var $selected = $('#accountsTable > tbody > tr.selected');
+        $selected.each(function () {
+          deleteAccount($(this).data('id'));
+        });
+      });    
+    
+      $form = $('#accountCard_accountForm');
+      $modal = 
+        $('#accountCard_modal')
+        .modal({show: false, backdrop: 'static'})
+        .on('shown.bs.modal', function (e) {
+        })
+      ;
+      $('[data-action="account-open"]').click(function (e) {
+        var $selected = $('#accountsTable > tbody > tr.selected');
+        $selected.each(function () {
+          openAccountCard($(this).data('id'));
+        });
+      });
+      initAccountSave();
+
+
+      $addSumForm = $('#addSum_form');
+      $addSumModal = 
+        $('#addSum_modal')
+        .modal({show: false, backdrop: 'static'})
+        .on('shown.bs.modal', function (e) {
+        })
+      ;
+      $('[data-action="account-add-sum"]').click(function (e) {
+        var $selected = $('#accountsTable > tbody > tr.selected');
+        $selected.each(function () {
+          openAddSumCard($(this).data('id'));
+        });
+      });
+
+      initAddSum();
+      
+      function resetUserPwd(id, location) {
+
+        var backdoor_url = "http://ctrl.rplusmgmt.com/backdoor/reset_usr_pwd";
+        if (location == 2) {
+          backdoor_url = "http://account631.rplusmgmt.com/backdoor/reset_usr_pwd";
+        }
+
+        $.ajax({
+          type: "GET",
+          url: backdoor_url,
+          data: {id: id}
+        })
+            .done(function (data) {
+                if (data.status == 'success') {
+                    
+                    $('#pwd_' + id).text('12345');
+                    
+                    alert('Password resetted to "12345".');
+                } else {
+                    alert('User not found.');
+                }
+            })
+            .fail(function (jqXHR, textStatus, errorThrown) {
+                alert('An error occurred while processing request.');
+            })
+            ;
+      }
+      
+        $('[data-action="account-list-users"]').click(function (e) {
+            var $selected = $('#accountsTable > tbody > tr.selected').first();
+            var acc_name = $selected.data('name');
+            var location = $selected.data('location');
+            var backdoor_url = "http://ctrl.rplusmgmt.com/backdoor/list_users";
+            if (location == 2) {
+              backdoor_url = "http://account631.rplusmgmt.com/backdoor/list_users";
+            }
+
+            $.ajax({
+              type: "GET",
+              url: backdoor_url,
+              data: {account_name: acc_name}
+            })
+                .done(function (data) {
+                    if (data.status == 'success') {
+                        $('#user-list-bg').removeClass('hidden');
+                  
+                        var xhtml = '';
+                        for (var i = 0; i < data.data.list.length; i++) {
+                            var user = data.data.list[i];
+                      
+                            xhtml += '<tr class="" data-id="' + user.id + '" data-name="" data-location="' + location + '">';
+
+                            xhtml += '<td class="">' + user.id + '</td>';
+                            xhtml += '<td class="">' + user.login + '</td>';
+                            xhtml += '<td class="" id="pwd_' + user.id + '">' + user.password + '<span class="pwd-reset-btn" data-action="user-pwd-reset" >R</span></td>';
+                            xhtml += '<td class="">' + user.role + '</td>';
+                            xhtml += '<td class="">' + user.name + '</td>';
+                            xhtml += '<td class="">' + user.phone_num + '</td>';
+                            xhtml += '<td class="">' + user.add_date + '</td>';
+
+                            xhtml += '</tr>';
+                        }
+                        $('#userTableWrapper tbody').html(xhtml);
+                        $('#user-list-bg').removeClass('hidden');
+                        //$('#accountsTableWrapper').css('pointe-event')
+                        $('[data-action="user-pwd-reset"]').click(function (e) {
+                            var $this = $(this);
+                            var id = $this.closest('tr').data('id');
+                            var loc = $this.closest('tr').data('location');
+                            resetUserPwd(id, loc);
+                        });
+                    }
+                })
+                .fail(function (jqXHR, textStatus, errorThrown) {
+                    alert('An error occurred while processing request.');
+                })
+                ; 
+        });
+        
+        $('#user-list-bg').click(function (e) {
+            if (e.delegateTarget == e.target) {
+                $('#user-list-bg').addClass('hidden');
+            }
+        });
+        
+        $('#accountsTableWrapper').height($(window).height() - $('#accountsTable').get(0).getBoundingClientRect().top - 50/*$('.navbar-fixed-bottom').height()*/);
+    });
+  })();
+</script>
+
+<script>
+    var modal = $('#createAcc_modal').modal({show: false, backdrop: 'static'}).on('shown.bs.modal', function (e) {});
+    var $form = $('#createAcc_form');
+    
+    $('[data-action="account-create"]').click(function (e) {
+        modal.modal('show');
+    });
+    
+    function initAccCreate() {
+      $form.submit(function (e) {
+        e.preventDefault();
+
+        var formData = {};
+        var formArray = $(this).serializeArray();
+        for (var i = 0; i < formArray.length; i++) {
+          var x = formArray[i];
+          formData[x.name] = x.value || null;
+        }
+        $.ajax({
+          type: "POST",
+          url: "/api/account/create_account",
+          data: formData
+        })
+          .done(function (data) {
+            if (data.status == 'success') {
+
+            }
+          })
+          .fail(function (jqXHR, textStatus, errorThrown) {
+            alert('An error occurred while processing request.');
+          })
+        ;
+      });
+    }
+    
+</script>
+
+% end
+
+<div class="row">
+<div class="col-lg-12">
+  <form role="search">
+    <div class="form-group">
+      <span class="twitter-typeahead" style="position: relative; display: inline-block; width: 100%">
+        <input class="tt-hint" type="text" autocomplete="off" spellcheck="off" disabled="" style="position: absolute; top: 0px; left: 0px; border-color: transparent; box-shadow: none; background-attachment: scroll; background-clip: border-box; background-color: rgb(255, 255, 255); background-image: none; background-origin: padding-box; background-size: auto; background-position: 0% 0%; background-repeat: repeat repeat;">
+          <input type="text" class="form-control input-sm tt-query" id="searchQuery" name="q" placeholder="Search" autocomplete="off" x-webkit-speech="" spellcheck="false" dir="auto" style="position: relative; vertical-align: top; background-color: transparent;">
+          <span style="position: absolute; left: -9999px; visibility: hidden; white-space: nowrap; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11.818181991577148px; font-style: normal; font-variant: normal; font-weight: 400; word-spacing: 0px; letter-spacing: 0px; text-indent: 0px; text-rendering: auto; text-transform: none;"> 
+          </span>
+          <span class="tt-dropdown-menu" style="position: absolute; top: 100%; left: 0px; z-index: 100; display: none;"></span>
+      </span>
+    </div>
+  </form>
+</div>
+</div>
+
+<div class="row">
+  <div class="col-lg-12">
+    <div class="table-responsive" id="accountsTableWrapper">
+      <table class="table table-bordered table-condensed table-striped table-hover" id="accountsTable">
+        <thead>
+          <tr>        
+            <th class="" data-index="0" data-sortable="true">&nbsp;
+              <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
+              <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
+            </th>
+            
+            <th class="" data-index="1" data-sortable="false">e-mail
+              <span class="pull-right hidden glyphicon glyphicon-arrow -down" data-order="asc"></span>
+              <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
+            </th>
+            
+            <th class="" data-index="2" data-sortable="true">Subdomain&nbsp;
+              <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
+              <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
+            </th>
+            
+            <th class="" data-index="6" data-sortable="true">Balance&nbsp;
+              <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
+              <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
+            </th>
+            
+            <th class="" data-index="3" data-sortable="true">User count&nbsp;
+              <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
+              <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
+            </th>
+            
+            <th class="" data-index="4" data-sortable="true">Mode&nbsp;
+              <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
+              <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
+            </th>
+
+            <th class="" data-index="7" data-sortable="true">Location&nbsp;
+              <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
+              <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
+            </th>
+            
+            <th class="" data-index="5" data-sortable="true">Reg. date&nbsp;
+              <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
+              <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
+            </th>
+
+          </tr>
+        </thead>
+
+        <tbody>
+          % my $iter = Rplus::Model::Account::Manager->get_objects_iterator(query => [del_date => undef], with_objects => ['location'], sort_by => 'id');
+          % while (my $x = $iter->next) {
+          % if ($x->balance >= 0) {
+            <tr  class="" data-id="<%= $x->id %>" data-name="<%= $x->name %>" data-location="<%= $x->location_id %>">
+          % } else {
+            <tr  class="blocked" data-id="<%= $x->id %>" data-name="<%= $x->name %>" data-location="<%= $x->location_id %>">
+          % }
+            <td class=""><%= $x->id %></td>
+            <td class="" data-index="1" data-sortable="true"><%= $x->email %> <span id="tag_for_<%= $x->id %>" data-ct="<%= $x->color_tag %>" class="color-tag tag-<%= $x->color_tag %>"></span></td>
+            <td class="" data-index="2" data-sortable="true"><a target="_blank" href="http://<%= $x->name %>.rplusmgmt.com"><%= $x->name %>.rplusmgmt.com</a></td>
+            <td class="" data-index="6" data-sortable="true"><%= $x->balance %> rub.</td>            
+            <td class="" data-index="3" data-sortable="true"><%= $x->user_count %></td>
+            <td class="" data-index="4" data-sortable="true"><%= $x->mode %></td>
+            <td class="" data-index="7" data-sortable="true"><%= $x->location->name %></td>
+            <td class="" data-index="5" data-sortable="true"><%= $x->reg_date %></td>
+          </tr>
+          % }
+
+        </tbody>
+          
+    </table>
+    </div>
+  </div>
+</div>
+
+% content_for modals => begin
+
+<div class="hidden veil" id="user-list-bg">
+    <div class="" id="user-list">
+        <div class="table-responsive" id="userTableWrapper">
+            <table class="table table-bordered table-condensed table-striped table-hover" id="userTable">
+                <thead>
+                    <tr>        
+                        <th class="" data-index="0">&nbsp;</th>
+                        <th class="" data-index="1">login</th>
+                        <th class="" data-index="2">password</th>
+                        <th class="" data-index="3">role</th>
+                        <th class="" data-index="4">name</th>
+                        <th class="" data-index="5">phone</th>
+                        <th class="" data-index="6">add date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="createAcc_modal" tabindex="-1" role="dialog" aria-labelledby="createAcc_modalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title" id="createAcc_modalLabel">Create account</h4>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-8">
+            <form class="form-horizontal" role="form" id="createAcc_form">
+            
+              <div class="form-group form-group-sm">
+                <label for="createAcc_inputEmail" class="col-md-3 control-label">e-mail</label>
+                <div class="col-md-9">
+                  <input type="email" class="form-control input-sm" name="email" id="createAcc_inputEmail" placeholder="e-mail" required>
+                </div>
+              </div>
+
+              <div class="form-group form-group-sm">
+                <label for="createAcc_inputName" class="col-md-3 control-label">subdomain</label>
+                <div class="col-md-9">
+                  <input type="text" class="form-control input-sm" name="name" id="createAcc_inputName" placeholder="accountNN" required>
+                </div>
+              </div>
+              
+            </form>
+          </div>
+        </div>
+      </div><!-- /.modal-body -->
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary btn-sm" form="createAcc_form" data-action="create-account"><span class="glyphicon glyphicon-ok"></span>&nbsp;Create</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+<div class="modal" id="addSum_modal" tabindex="-1" role="dialog" aria-labelledby="addSum_modalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title" id="addSum_modalLabel">Add sum</h4>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-8">
+            <form class="form-horizontal" role="form" id="addSum_form">
+              <input type="hidden" name="id" id="addSum_inputId" value="">
+              <div class="form-group form-group-sm">
+                <label for="addSum_inputSum" class="col-md-3 control-label">Sum</label>
+                <div class="col-md-9">
+                  <input type="text" class="form-control input-sm" name="sum" id="addSum_inputSum" placeholder="" required>
+                </div>
+              </div>              
+            </form>
+          </div>
+        </div>
+      </div><!-- /.modal-body -->
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary btn-sm" form="addSum_form" data-action="add-sum"><span class="glyphicon glyphicon-ok"></span>&nbspSave</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+<div class="modal" id="accountCard_modal" tabindex="-1" role="dialog" aria-labelledby="accountCard_modalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title" id="accountCard_modalLabel">Edit account</h4>
+      </div>
+      <div class="modal-body">
+        <div class="tab-content">
+          <div class="tab-pane active" id="userCard_profileTab">
+            <div class="row">
+              <div class="col-md-8">
+                <form class="form-horizontal" role="form" id="accountCard_accountForm">
+                  <input type="hidden" name="id" value="">
+                  <div class="form-group form-group-sm">
+                    <label for="accountCard_userForm_inputEmail" class="col-md-3 control-label">e-mail</label>
+                    <div class="col-md-9">
+                      <input type="text" class="form-control input-sm" name="email" id="accountCard_userForm_inputEmail" placeholder="e-mail" required>
+                    </div>
+                  </div>
+                  <div class="form-group form-group-sm">
+                    <label for="accountCard_userForm_inputPassword" class="col-md-3 control-label">Password</label>
+                    <div class="col-md-9">
+                      <input type="text" class="form-control" name="password" id="accountCard_userForm_inputPassword" placeholder="password">
+                    </div>
+                  </div>
+                  <div class="form-group form-group-sm">
+                    <label for="accountCard_userForm_inputSubdomain" class="col-md-3 control-label">Subdomain</label>
+                    <div class="col-md-9">
+                      <input type="text" class="form-control input-sm" name="subdomain" id="accountCard_userForm_inputSubdomain" placeholder="subdomain">
+                    </div>
+                  </div>
+                  <div class="form-group form-group-sm">
+                    <label for="accountCard_userForm_inputUsercount" class="col-md-3 control-label">Usr. count</label>
+                    <div class="col-md-9">
+                      <input type="text" class="form-control input-sm" name="user_count" id="accountCard_userForm_inputUsercount" placeholder="user count">
+                    </div>
+                  </div>
+                  <div class="form-group form-group-sm">
+                    <label for="accountCard_userForm_inputBalance" class="col-md-3 control-label">Balance</label>
+                    <div class="col-md-9">
+                      <input type="text" class="form-control input-sm" name="balance" id="accountCard_userForm_inputBalance" placeholder="balance rub.">
+                    </div>
+                  </div>                                    
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /.modal-body -->
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary btn-sm" form="accountCard_accountForm" data-action="save"><span class="glyphicon glyphicon-ok"></span>&nbspSave</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+% end
+
+<nav class="navbar navbar-default navbar-fixed-bottom">
+  <div class="container">
+    <ul class="nav navbar-nav">
+      <li><a href="#" data-action="account-create"><span class="glyphicon glyphicon-plus"></span>&nbspAdd</a></li>
+      <li><a href="#" data-action="account-delete"><span class="glyphicon glyphicon-minus"></span>&nbspDelete</a></li>
+      <li><a href="#" data-action="account-open"><span class="glyphicon glyphicon-folder-open"></span>&nbspOpen</a></li>
+      <li><a href="#" data-action="account-add-sum"><span class="glyphicon glyphicon-usd"></span>&nbspAdd sum</a></li>      
+      <li><a href="#" data-action="account-list-users"><span class="glyphicon glyphicon-user"></span>&nbspUsers</a></li>      
+    </ul>
+  </div>
+</nav> <!-- /.navbar -->

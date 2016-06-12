@@ -1,0 +1,52 @@
+#!/usr/bin/env perl
+
+use FindBin;
+BEGIN { unshift @INC, "$FindBin::Bin/../lib" }
+
+use Mojo::UserAgent;
+
+use Rplus::Model::Account;
+use Rplus::Model::Account::Manager;
+
+use Rplus::Modern;
+use JSON;
+use File::Copy;
+
+my $ua = Mojo::UserAgent->new;
+
+my $account_iter = Rplus::Model::Account::Manager->get_objects_iterator(query => ['!subdomain' => undef, location_id => 2, del_date => undef]);
+while (my $account = $account_iter->next) {
+
+    my $subdomain = $account->subdomain;
+    say 'exporting: ' . $subdomain;
+
+    my $tx = $ua->get('http://account361.rplusmgmt.com/backdoor/add_account',
+        form => {
+            email => $account->email,
+            password => $account->password,
+            balance => $account->balance,
+            user_count => $account->user_count,
+            mode => $account->mode,
+            location_id => $account->location_id,
+            reg_date => $account->reg_date,
+            name => $account->subdomain,
+        },
+    );
+    if (my $res = $tx->success) {
+        my $data = $res->json;
+        say 'done! acc_id: ' .  $data->{account_id};
+
+        say 'copynig script';
+        chdir "/home/raven/projects/rplus_accounts/script";
+        copy("export_data", "/home/raven/clients/$subdomain/RplusMgmt/script/export_data");
+        chdir "/home/raven/clients/$subdomain/RplusMgmt/script/";
+        say 'exporting data';
+        system ("perl export_data");
+        
+
+    } else {
+        say 'failed';
+    }
+}
+
+1;

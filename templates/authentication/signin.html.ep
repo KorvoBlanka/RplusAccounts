@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>sign in &middot; RplusAccounts</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Rplus Management">
+    <meta name="author" content="Alexander Orlenko">
+
+    <!-- Bootstrap -->
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
+
+    <style type="text/css">
+      body {
+        padding-top: 50px;
+        padding-bottom: 50px;
+      }
+
+      .panel {
+        max-width: 350px;
+      }
+
+      .panel-body {
+        padding: 19px 29px 29px;
+      }
+
+      .alert-sm {
+        padding: 9px;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div class="container">
+      <div class="panel panel-default center-block">
+        <div class="panel-body">
+          <form class="form-signin">
+            <fieldset>
+              <legend>Please Sign In</legend>
+              <div class="alert alert-danger alert-sm hidden">invalid login or password</div>
+              <div class="form-group">
+                <input type="text" class="form-control" name="login" placeholder="login" required autofocus>
+              </div>
+              <div class="form-group">
+                <input type="password" class="form-control" name="password" placeholder="password">
+              </div>
+              <div class="checkbox">
+                <label>
+                  <input type="checkbox" name="remember_me">remember me
+                </label>
+              </div>
+              <button type="submit" class="btn btn-primary" data-loading-text="loading...">sign in</button>
+            </fieldset>
+          </form>
+        </div>
+      </div>
+    </div> <!-- /container -->
+
+    <!-- JavaScript -->
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery.js"></script>
+    
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+
+    <script type="application/javascript">
+      $(function () {
+        $('.form-signin').submit(function (e) {
+          e.preventDefault();
+          var login = $('input[name="login"]').val();
+          var password = $('input[name="password"]').val();
+          var rememberMe = $('input[name="remember_me"]').prop('checked');
+          $.ajax({
+            type: "POST",
+            url: "/signin",
+            data: {login: login, password: password, remember_me: rememberMe},
+            beforeSend: function (jqXHR, settings) { $('.form-signin button[type="submit"]').button('loading'); },
+          })
+            .done(function (data, textStatus, jqXHR) {
+              if (data.status == 'failed') {
+                $('.form-signin button[type="submit"]').button('reset');
+                $('.form-group').addClass('has-error');
+                $('.alert-danger').removeClass('hidden');
+              } else {
+                location.reload();
+              }
+            })
+            .fail(function (jqXHR, textStatus, errorThrown) {
+              $('.form-signin button[type="submit"]').button('reset');
+              alert('Error while processing request. Please, try again later.');
+            })
+          ;
+        });
+      });
+    </script>
+
+  </body>
+</html>
