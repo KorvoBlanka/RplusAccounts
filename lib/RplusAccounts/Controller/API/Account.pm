@@ -3,13 +3,13 @@ package RplusAccounts::Controller::API::Account;
 use Mojo::Base 'Mojolicious::Controller';
 
 use Rplus::DB;
-use Template;
 
 use Rplus::Model::Account;
 use Rplus::Model::Account::Manager;
 
-my $template = Template->new;
 my $dbh = Rplus::DB->new_or_cached->dbh;
+
+my $ua = Mojo::UserAgent->new;
 
 sub log_event {
     my $text = shift;
@@ -20,17 +20,17 @@ sub set_color_tag {
     my $self = shift;
     my $id = $self->param('id');
     my $color_tag = $self->param('color_tag');
-    
+
     my $account = Rplus::Model::Account::Manager->get_objects(query => [id => $id, del_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $account;
-    
+
     if ($account->color_tag == $color_tag) {
         $account->color_tag(undef);
     } else {
         $account->color_tag($color_tag);
     }
     $account->save;
-    
+
     return $self->render(json => {status => 'success', color_tag => $account->color_tag});
 }
 
@@ -89,11 +89,14 @@ sub get_by_name {
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $account;
 
     my $res = {
-            user_count => $account->user_count,
-            balance => $account->balance,
+        name => $account->name,
+        balance => $account->balance,
+        user_count => $account->user_count,
+        mode => $account->mode,
+        location_id => $account->location_id,
     };
 
-    return $self->render(json => $res);
+    return $self->render(json => {status => 'ok', data => $res});
 }
 
 sub delete {
@@ -102,30 +105,30 @@ sub delete {
 
     my $account = Rplus::Model::Account::Manager->get_objects(query => [id => $id, del_date => undef])->[0];
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $account;
-    
+
     $account->del_date('now()');
     $account->save(changes_only => 1);
-    
+
     return $self->render(json => {status => 'success', });
 }
 
 sub save {
     my $self = shift;
-    
+
     my $email = $self->param('email');
     my $password = $self->param('password');
     my $subdomain = $self->param('subdomain');
     my $user_count = $self->param('user_count');
     my $balance = $self->param('balance');
-    
+
     my $account;
-    
+
     if (my $id = $self->param('id')) {
         $account = Rplus::Model::Account::Manager->get_objects(query => [id => $id, del_date => undef])->[0];
     }
 
     return $self->render(json => {error => 'Not Found'}, status => 404) unless $account;
-    
+
     # Save
     $account->email($email);
     $account->password($password);
@@ -133,7 +136,7 @@ sub save {
     $account->balance($balance);
     $account->user_count($user_count);
 
-    
+
     eval {
         $account->save($account->id ? (changes_only => 1) : (insert => 1));
         1;
@@ -144,14 +147,56 @@ sub save {
     return $self->render(json => {status => 'success', });
 }
 
-sub instance_create {
-    my $subdomain = shift;
+sub create {
+  my $self = shift;
 
+  # Input params
+  my $email = $self->param('email');
+  my $account_name = $self->param('account_name');
+  my $password = $self->param('password');
+  my $mode = $self->param('mode');
+  my $location_id = $self->param('location_id');
+
+
+  # Create account
+  my $account = Rplus::Model::Account->new;
+
+  # Save
+  $account->email($email);
+  $account->name($account_name);
+  $account->password($password);
+  $account->mode($mode);
+  $account->location_id($location_id);
+
+  $account->save();
+
+  unless ($account_name) {
+    $account->name('account' . $account->id);
+    $account->save(changes_only => 1);
+  }
+
+  my $server_name;
+  if ($account->location_id == 1) {       # khv
+    $server_name = 'khv.rplusmgmt.com';
+  } elsif ($account->location_id == 2) {  # kms
+    $server_name = 'kms.rplusmgmt.com';
+  } elsif ($account->location_id == 3) {  # msk
+    $server_name = 'msk.rplusmgmt.com';
+  }
+  my $service_url = "http://$server_name/service/create_account";
+
+  my $tx = $ua->get($service_url, form => {
+      email => $account->email,
+      name =>  $account->name,
+      location_id => $account->location_id,
+  });
+
+  return $self->render(json => {status => 'success'});
 }
 
 sub add_sum {
     my $self = shift;
-    
+
     my $id = $self->param('id');
     my $sum = $self->param('sum');
 
@@ -161,7 +206,57 @@ sub add_sum {
     $account->balance($account->balance + $sum);
     $account->save(changes_only => 1);
 
-    return $self->render(json => {status => 'success', });   
+    return $self->render(json => {status => 'success', });
+}
+
+sub list_users {
+  my $self = shift;
+
+  my $id = $self->param('id');
+  my $account = Rplus::Model::Account::Manager->get_objects(query => [id => $id, del_date => undef])->[0];
+  return $self->render(json => {error => 'Not Found'}, status => 404) unless $account;
+
+  my $server_name;
+  if ($account->location_id == 1) {       # khv
+    $server_name = 'khv.rplusmgmt.com';
+  } elsif ($account->location_id == 2) {  # kms
+    $server_name = 'kms.rplusmgmt.com';
+  } elsif ($account->location_id == 3) {  # msk
+    $server_name = 'msk.rplusmgmt.com';
+  }
+  my $service_url = "http://$server_name/service/list_users";
+
+  my $tx = $ua->get($service_url, form => {
+      account_name =>  $account->name,
+  });
+
+  return $self->render(json => $tx->res->json);
+}
+
+sub reset_usr_password {
+  my $self = shift;
+
+  my $id = $self->param('id');
+  my $user_id = $self->param('user_id');
+
+  my $account = Rplus::Model::Account::Manager->get_objects(query => [id => $id, del_date => undef])->[0];
+  return $self->render(json => {error => 'Not Found'}, status => 404) unless $account;
+
+  my $server_name;
+  if ($account->location_id == 1) {       # khv
+    $server_name = 'khv.rplusmgmt.com';
+  } elsif ($account->location_id == 2) {  # kms
+    $server_name = 'kms.rplusmgmt.com';
+  } elsif ($account->location_id == 3) {  # msk
+    $server_name = 'msk.rplusmgmt.com';
+  }
+  my $service_url = "http://$server_name/service/reset_usr_pwd";
+
+  my $tx = $ua->get($service_url, form => {
+      id => $user_id,
+  });
+
+  return $self->render(json => $tx->res->json);
 }
 
 1;

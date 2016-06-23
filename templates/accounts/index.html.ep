@@ -7,7 +7,7 @@
   #accountCard_modal .modal-dialog {
     width: 720px;
   }
-  
+
   #accountsTableWrapper {
     overflow: scroll;
   }
@@ -35,7 +35,7 @@
   #accountsTable > tbody > tr.selected > td > a {
     color: #ffffff;
   }
-  
+
   #accountsTable > tbody > tr.blocked > td {
     background-color: #ff8888;
     color: #ffffff;
@@ -61,7 +61,7 @@
         height: 100%;
         z-index: 9000;
     }
-    
+
     #user-list {
         position: fixed;
         width: 800px;
@@ -72,15 +72,15 @@
         margin-top: -200px;
         background-color: #fff;
         box-shadow: 0 0 10px rgba(0,0,0,0.5);
-      
+
         overflow: scroll;
     }
-    
+
     .veil {
       background-color: rgba(0,0,0,0.5);
       z-index: 1001;
     }
-    
+
     .pwd-reset-btn {
       float: right;
       border-radius: 50%;
@@ -145,13 +145,13 @@
     var dc_tid;
     var $modal, $form;
     var $addSumModal, $addSumForm;
-    
+
     $('#accountsTable > tbody').on('mousedown', 'tr', function (e) {
     var $this = $(this);
     var id = $this.data('id');
     switch (event.which) {
         case 1:   // lmb
-        dc_tid = setTimeout(function() { 
+        dc_tid = setTimeout(function() {
               var was_selected = $this.hasClass('selected');
               var $selected = $('#accountsTable > tbody > tr.selected');
               $selected.removeClass('selected');
@@ -170,7 +170,7 @@
         default:
       }
     });
-  
+
     function createAccountCard() {
       $('#accountCard_addDate').text(new Date());
       $('#accountCard_modalLabel').text('New account');
@@ -197,8 +197,8 @@
           alert('Cannot open account card');
         });
     }
-    
-    function openAddSumCard(id) {       
+
+    function openAddSumCard(id) {
         $('#addSum_inputId').val(id);
         $('#addSum_inputSum').val('');
 
@@ -260,7 +260,7 @@
         ;
       });
     }
-  
+
     function deleteAccount(id) {
         $.ajax({
           type: "POST",
@@ -276,21 +276,21 @@
           .fail(function (jqXHR, textStatus, errorThrown) {
             alert('An error occurred while processing request.');
           })
-        ;    
+        ;
     }
-  
+
     $( "#accountsTable > tbody > tr" ).dblclick(function() {
         clearTimeout(dc_tid);
         var $this = $(this);
         $this.addClass('selected');
         openAccountCard($this.data('id'));
     });
-  
+
     $(function () {
-    
-        function createContextMenu() {       
+
+        function createContextMenu() {
           var context_cb = function(e){};
-          
+
           context.init({preventDoubleContext: true, compress: true, above: 'auto',}, context_cb);
           context.attach('#accountsTable', [
             {text: '<span class="glyphicon glyphicon-folder-open"></span>&nbsp&nbspOpen', element_id: 'el_open', data_action: 'account-open',},
@@ -302,17 +302,17 @@
             {header: '&nbspТеги...'},
             {header:  // '+' to concat strings, '' - to match last +
             '<span class="cmenu-tag-group">' +
-              '<span class="color-tag tag-1" data-action="set-color_tag" data-val="1"></span>' + 
-              '<span class="color-tag tag-2" data-action="set-color_tag" data-val="2"></span>' + 
-              '<span class="color-tag tag-3" data-action="set-color_tag" data-val="3"></span>' + 
-              '<span class="color-tag tag-4" data-action="set-color_tag" data-val="4"></span>' + 
-              '<span class="color-tag tag-5" data-action="set-color_tag" data-val="5"></span>' + 
-              '<span class="color-tag tag-6" data-action="set-color_tag" data-val="6"></span>' + 
-              '<span class="color-tag tag-7" data-action="set-color_tag" data-val="7"></span>' + 
+              '<span class="color-tag tag-1" data-action="set-color_tag" data-val="1"></span>' +
+              '<span class="color-tag tag-2" data-action="set-color_tag" data-val="2"></span>' +
+              '<span class="color-tag tag-3" data-action="set-color_tag" data-val="3"></span>' +
+              '<span class="color-tag tag-4" data-action="set-color_tag" data-val="4"></span>' +
+              '<span class="color-tag tag-5" data-action="set-color_tag" data-val="5"></span>' +
+              '<span class="color-tag tag-6" data-action="set-color_tag" data-val="6"></span>' +
+              '<span class="color-tag tag-7" data-action="set-color_tag" data-val="7"></span>' +
             '</span>'},
           ]);
         }
-        
+
         createContextMenu();
 
         $('[data-action="set-color_tag"]').click(function (e) {
@@ -320,7 +320,7 @@
             var val = $(this).data('val');
             var $selected = $('.selected').first();
             var id = $selected.data('id');
-            
+
             $.ajax({
               type: "POST",
               url: "/api/account/set_color_tag",
@@ -343,16 +343,16 @@
               })
             ;
         });
-      
+
       $('[data-action="account-delete"]').click(function (e) {
         var $selected = $('#accountsTable > tbody > tr.selected');
         $selected.each(function () {
           deleteAccount($(this).data('id'));
         });
-      });    
-    
+      });
+
       $form = $('#accountCard_accountForm');
-      $modal = 
+      $modal =
         $('#accountCard_modal')
         .modal({show: false, backdrop: 'static'})
         .on('shown.bs.modal', function (e) {
@@ -368,7 +368,7 @@
 
 
       $addSumForm = $('#addSum_form');
-      $addSumModal = 
+      $addSumModal =
         $('#addSum_modal')
         .modal({show: false, backdrop: 'static'})
         .on('shown.bs.modal', function (e) {
@@ -382,24 +382,19 @@
       });
 
       initAddSum();
-      
-      function resetUserPwd(id, location) {
 
-        var backdoor_url = "http://ctrl.rplusmgmt.com/backdoor/reset_usr_pwd";
-        if (location == 2) {
-          backdoor_url = "http://account631.rplusmgmt.com/backdoor/reset_usr_pwd";
-        }
+      function resetUserPwd(account_id, user_id) {
 
         $.ajax({
           type: "GET",
-          url: backdoor_url,
-          data: {id: id}
+          url: "/api/account/reset_usr_password",
+          data: {id: account_id, user_id: user_id}
         })
             .done(function (data) {
                 if (data.status == 'success') {
-                    
+
                     $('#pwd_' + id).text('12345');
-                    
+
                     alert('Password resetted to "12345".');
                 } else {
                     alert('User not found.');
@@ -410,30 +405,25 @@
             })
             ;
       }
-      
+
         $('[data-action="account-list-users"]').click(function (e) {
             var $selected = $('#accountsTable > tbody > tr.selected').first();
-            var acc_name = $selected.data('name');
-            var location = $selected.data('location');
-            var backdoor_url = "http://ctrl.rplusmgmt.com/backdoor/list_users";
-            if (location == 2) {
-              backdoor_url = "http://account631.rplusmgmt.com/backdoor/list_users";
-            }
+            var id = $selected.data('id');
 
             $.ajax({
               type: "GET",
-              url: backdoor_url,
-              data: {account_name: acc_name}
+              url: "/api/account/list_users",
+              data: {id: id}
             })
                 .done(function (data) {
                     if (data.status == 'success') {
                         $('#user-list-bg').removeClass('hidden');
-                  
+
                         var xhtml = '';
                         for (var i = 0; i < data.data.list.length; i++) {
                             var user = data.data.list[i];
-                      
-                            xhtml += '<tr class="" data-id="' + user.id + '" data-name="" data-location="' + location + '">';
+
+                            xhtml += '<tr class="" data-id="' + user.id + '" data-account_id="' + id + '">';
 
                             xhtml += '<td class="">' + user.id + '</td>';
                             xhtml += '<td class="">' + user.login + '</td>';
@@ -450,24 +440,24 @@
                         //$('#accountsTableWrapper').css('pointe-event')
                         $('[data-action="user-pwd-reset"]').click(function (e) {
                             var $this = $(this);
-                            var id = $this.closest('tr').data('id');
-                            var loc = $this.closest('tr').data('location');
-                            resetUserPwd(id, loc);
+                            var user_id = $this.closest('tr').data('id');
+                            var account_id = $this.closest('tr').data('account_id');
+                            resetUserPwd(account_id, user_id);
                         });
                     }
                 })
                 .fail(function (jqXHR, textStatus, errorThrown) {
                     alert('An error occurred while processing request.');
                 })
-                ; 
+                ;
         });
-        
+
         $('#user-list-bg').click(function (e) {
             if (e.delegateTarget == e.target) {
                 $('#user-list-bg').addClass('hidden');
             }
         });
-        
+
         $('#accountsTableWrapper').height($(window).height() - $('#accountsTable').get(0).getBoundingClientRect().top - 50/*$('.navbar-fixed-bottom').height()*/);
     });
   })();
@@ -476,38 +466,35 @@
 <script>
     var modal = $('#createAcc_modal').modal({show: false, backdrop: 'static'}).on('shown.bs.modal', function (e) {});
     var $form = $('#createAcc_form');
-    
+
     $('[data-action="account-create"]').click(function (e) {
         modal.modal('show');
     });
-    
-    function initAccCreate() {
-      $form.submit(function (e) {
-        e.preventDefault();
+
+    $('[data-action="create-account"]').click(function() {
 
         var formData = {};
-        var formArray = $(this).serializeArray();
+        var formArray = $form.serializeArray();
         for (var i = 0; i < formArray.length; i++) {
           var x = formArray[i];
           formData[x.name] = x.value || null;
         }
+
         $.ajax({
           type: "POST",
-          url: "/api/account/create_account",
+          url: "/api/account/create",
           data: formData
         })
           .done(function (data) {
             if (data.status == 'success') {
-
+              modal.hide();
             }
           })
           .fail(function (jqXHR, textStatus, errorThrown) {
             alert('An error occurred while processing request.');
           })
-        ;
-      });
-    }
-    
+    });
+
 </script>
 
 % end
@@ -519,7 +506,7 @@
       <span class="twitter-typeahead" style="position: relative; display: inline-block; width: 100%">
         <input class="tt-hint" type="text" autocomplete="off" spellcheck="off" disabled="" style="position: absolute; top: 0px; left: 0px; border-color: transparent; box-shadow: none; background-attachment: scroll; background-clip: border-box; background-color: rgb(255, 255, 255); background-image: none; background-origin: padding-box; background-size: auto; background-position: 0% 0%; background-repeat: repeat repeat;">
           <input type="text" class="form-control input-sm tt-query" id="searchQuery" name="q" placeholder="Search" autocomplete="off" x-webkit-speech="" spellcheck="false" dir="auto" style="position: relative; vertical-align: top; background-color: transparent;">
-          <span style="position: absolute; left: -9999px; visibility: hidden; white-space: nowrap; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11.818181991577148px; font-style: normal; font-variant: normal; font-weight: 400; word-spacing: 0px; letter-spacing: 0px; text-indent: 0px; text-rendering: auto; text-transform: none;"> 
+          <span style="position: absolute; left: -9999px; visibility: hidden; white-space: nowrap; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11.818181991577148px; font-style: normal; font-variant: normal; font-weight: 400; word-spacing: 0px; letter-spacing: 0px; text-indent: 0px; text-rendering: auto; text-transform: none;">
           </span>
           <span class="tt-dropdown-menu" style="position: absolute; top: 100%; left: 0px; z-index: 100; display: none;"></span>
       </span>
@@ -533,32 +520,32 @@
     <div class="table-responsive" id="accountsTableWrapper">
       <table class="table table-bordered table-condensed table-striped table-hover" id="accountsTable">
         <thead>
-          <tr>        
+          <tr>
             <th class="" data-index="0" data-sortable="true">&nbsp;
               <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
               <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
             </th>
-            
+
             <th class="" data-index="1" data-sortable="false">e-mail
               <span class="pull-right hidden glyphicon glyphicon-arrow -down" data-order="asc"></span>
               <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
             </th>
-            
+
             <th class="" data-index="2" data-sortable="true">Subdomain&nbsp;
               <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
               <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
             </th>
-            
+
             <th class="" data-index="6" data-sortable="true">Balance&nbsp;
               <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
               <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
             </th>
-            
+
             <th class="" data-index="3" data-sortable="true">User count&nbsp;
               <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
               <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
             </th>
-            
+
             <th class="" data-index="4" data-sortable="true">Mode&nbsp;
               <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
               <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
@@ -568,7 +555,7 @@
               <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
               <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
             </th>
-            
+
             <th class="" data-index="5" data-sortable="true">Reg. date&nbsp;
               <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
               <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
@@ -588,7 +575,7 @@
             <td class=""><%= $x->id %></td>
             <td class="" data-index="1" data-sortable="true"><%= $x->email %> <span id="tag_for_<%= $x->id %>" data-ct="<%= $x->color_tag %>" class="color-tag tag-<%= $x->color_tag %>"></span></td>
             <td class="" data-index="2" data-sortable="true"><a target="_blank" href="http://<%= $x->name %>.rplusmgmt.com"><%= $x->name %>.rplusmgmt.com</a></td>
-            <td class="" data-index="6" data-sortable="true"><%= $x->balance %> rub.</td>            
+            <td class="" data-index="6" data-sortable="true"><%= $x->balance %> rub.</td>
             <td class="" data-index="3" data-sortable="true"><%= $x->user_count %></td>
             <td class="" data-index="4" data-sortable="true"><%= $x->mode %></td>
             <td class="" data-index="7" data-sortable="true"><%= $x->location->name %></td>
@@ -597,7 +584,7 @@
           % }
 
         </tbody>
-          
+
     </table>
     </div>
   </div>
@@ -610,7 +597,7 @@
         <div class="table-responsive" id="userTableWrapper">
             <table class="table table-bordered table-condensed table-striped table-hover" id="userTable">
                 <thead>
-                    <tr>        
+                    <tr>
                         <th class="" data-index="0">&nbsp;</th>
                         <th class="" data-index="1">login</th>
                         <th class="" data-index="2">password</th>
@@ -638,7 +625,7 @@
         <div class="row">
           <div class="col-md-8">
             <form class="form-horizontal" role="form" id="createAcc_form">
-            
+
               <div class="form-group form-group-sm">
                 <label for="createAcc_inputEmail" class="col-md-3 control-label">e-mail</label>
                 <div class="col-md-9">
@@ -647,18 +634,47 @@
               </div>
 
               <div class="form-group form-group-sm">
-                <label for="createAcc_inputName" class="col-md-3 control-label">subdomain</label>
+                <label for="createAcc_inputName" class="col-md-3 control-label">acc name</label>
                 <div class="col-md-9">
-                  <input type="text" class="form-control input-sm" name="name" id="createAcc_inputName" placeholder="accountNN" required>
+                  <input type="text" class="form-control input-sm" name="account_name" id="createAcc_inputName" placeholder="somename" required>
                 </div>
               </div>
-              
+
+              <div class="form-group form-group-sm">
+                <label for="createAcc_inputPassword" class="col-md-3 control-label">password</label>
+                <div class="col-md-9">
+                  <input type="text" class="form-control input-sm" name="password" id="createAcc_inputPassword" placeholder="password" required>
+                </div>
+              </div>
+
+              <div class="form-group form-group-sm">
+                <label for="createAcc_inputLocation" class="col-md-3 control-label">location</label>
+                <div class="col-md-9">
+                  <select id="createAcc_inputLocation" name="location_id" class="form-control input-sm">
+                    <option value="1">Хабаровск</option>
+                    <option value="2">Комсомольск</option>
+                    <option value="3">Москва</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group form-group-sm">
+                <label for="createAcc_inputMode" class="col-md-3 control-label">mode</label>
+                <div class="col-md-9">
+                  <select id="createAcc_inputMode" name="mode" class="form-control input-sm">
+                    <option value="all">все</option>
+                    <option value="sale">продажа</option>
+                    <option value="rent">аренда</option>
+                  </select>
+                </div>
+              </div>
+
             </form>
           </div>
         </div>
       </div><!-- /.modal-body -->
       <div class="modal-footer">
-        <button type="submit" class="btn btn-primary btn-sm" form="createAcc_form" data-action="create-account"><span class="glyphicon glyphicon-ok"></span>&nbsp;Create</button>
+        <button class="btn btn-primary btn-sm" data-action="create-account"><span class="glyphicon glyphicon-ok"></span>&nbsp;Create</button>
       </div>
     </div><!-- /.modal-content -->
   </div><!-- /.modal-dialog -->
@@ -681,7 +697,7 @@
                 <div class="col-md-9">
                   <input type="text" class="form-control input-sm" name="sum" id="addSum_inputSum" placeholder="" required>
                 </div>
-              </div>              
+              </div>
             </form>
           </div>
         </div>
@@ -736,7 +752,7 @@
                     <div class="col-md-9">
                       <input type="text" class="form-control input-sm" name="balance" id="accountCard_userForm_inputBalance" placeholder="balance rub.">
                     </div>
-                  </div>                                    
+                  </div>
                 </form>
               </div>
             </div>
@@ -757,8 +773,8 @@
       <li><a href="#" data-action="account-create"><span class="glyphicon glyphicon-plus"></span>&nbspAdd</a></li>
       <li><a href="#" data-action="account-delete"><span class="glyphicon glyphicon-minus"></span>&nbspDelete</a></li>
       <li><a href="#" data-action="account-open"><span class="glyphicon glyphicon-folder-open"></span>&nbspOpen</a></li>
-      <li><a href="#" data-action="account-add-sum"><span class="glyphicon glyphicon-usd"></span>&nbspAdd sum</a></li>      
-      <li><a href="#" data-action="account-list-users"><span class="glyphicon glyphicon-user"></span>&nbspUsers</a></li>      
+      <li><a href="#" data-action="account-add-sum"><span class="glyphicon glyphicon-usd"></span>&nbspAdd sum</a></li>
+      <li><a href="#" data-action="account-list-users"><span class="glyphicon glyphicon-user"></span>&nbspUsers</a></li>
     </ul>
   </div>
 </nav> <!-- /.navbar -->
