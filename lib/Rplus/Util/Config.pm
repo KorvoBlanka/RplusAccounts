@@ -10,9 +10,10 @@ sub get_config {
     my $path = $INC{$module . '.pm'};
     $path =~ s{^(.*/)[^/]*$}{$1};
     $path = abs_path($path . '/../../../app.conf');
-    
+
     my $file = Mojo::Asset::File->new(path => $path);
     my $config = eval $file->slurp;
+
     return $config;
 }
 

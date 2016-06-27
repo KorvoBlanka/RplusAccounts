@@ -8,11 +8,17 @@ use Rplus::Modern;
 use Rplus::Model::Account;
 use Rplus::Model::Account::Manager;
 
+use Rplus::Util::Config;
+
 use MIME::Lite;
 use IPC::Open2;
 
+use Data::Dumper;
+
 use JSON;
 
+my $DEBUG = 0;
+my $config = Rplus::Util::Config::get_config();
 
 my $mail_message = <<'END_MESSAGE';
 
@@ -25,7 +31,7 @@ my $mail_message = <<'END_MESSAGE';
 </head>
 <body>
   <p>
-    Уважаемый пользователь, на вашем счету заканчиваются средства. 
+    Уважаемый пользователь, на вашем счету заканчиваются средства.
   </p>
   <p>
     Не забудьте пополнить счет в личном <a href="http://rplusmgmt.com/cabinet">кабинете</a>.
@@ -35,71 +41,85 @@ my $mail_message = <<'END_MESSAGE';
 
 END_MESSAGE
 
-open (LOG, '>>/home/raven/projects/RplusMgmt/script/write_off.log');
+open (LOG, '>>/var/log/rplus/write_off.log');
 
-print LOG localtime . ": write_off start\n";
+_log("write_off start");
 
 my $account_iter = Rplus::Model::Account::Manager->get_objects_iterator(query => [del_date => undef]);
 while (my $account = $account_iter->next) {
 
     eval {
 
-        print LOG "\t" . $account->name . "\n";
+        _log("\taccount " . $account->id);
 
         my $balance = $account->balance;
         my $user_count = $account->user_count;
         my $mode = $account->mode;
-        #my $use_mediators = (from_json($account->{options}))->{use_mediators_buffer} eq 'true' ? 1 : 0;
+
+        my $woc = $config->{'write_off'}->{$account->location_id};
 
         my $write_off = 0;
         if ($balance >= 0) {
-
-            if($mode eq 'all') {
-                $write_off = 80 + 20 * ($user_count - 1);
+            if ($mode eq 'sale') {
+                $write_off = $woc->{'sale_price'} + $woc->{'user_price'} * ($user_count - 1);
+            } elsif ($mode eq 'rent') {
+                $write_off = $woc->{'rent_price'} + $woc->{'user_price'} * ($user_count - 1);
             } else {
-                $write_off = 40 + 20 * ($user_count - 1);
+                $write_off = $woc->{'sale_price'} + $woc->{'rent_price'} + $woc->{'user_price'} * ($user_count - 1);
             }
 
             $account->balance($balance - $write_off);
 
             if(2 * $write_off > $balance) {
                 eval {
-                    send_email($account->email, 'RplusMgmt', $mail_message);
+                    if ($DEBUG == 0) {
+                      send_email($account->email, 'RplusMgmt', $mail_message);
+                    } else {
+                      _log('здесь могла быть ваша реклама');
+                    }
                 } or do {
-                    print LOG $@;    
-                }                        
+                    _log($@);
+                }
             }
         } else {
 
         }
 
-        print LOG "\tbalance: " . $account->balance . ' write_off: ' . $write_off . "\n\n";
-        $account->save(changes_only => 1);
+        _log("\tbalance: " . $account->balance . ' write_off: ' . $write_off);
+        if ($DEBUG == 0) {
+          $account->save(changes_only => 1);
+        }
     } or do {
-        print LOG $@;
+        _log($@);
     }
 }
 
-print LOG localtime . ": write_off done\n\n";
+_log("write_off done");
 
 close (LOG);
 
 
 sub send_email {
-    
+
     my $to = shift;
     my $subject = shift;
     my $message = shift;
-    
+
     my $from = 'info@rplusmgmt.com';
-  
+
     my $msg = MIME::Lite->new(
                    From     => $from,
                    To       => $to,
                    Subject  => $subject,
                    Data     => $message
                    );
-                   
-    $msg->attr("content-type" => "text/html; charset=UTF-8");     
+
+    $msg->attr("content-type" => "text/html; charset=UTF-8");
     $msg->send('smtp', 'smtp.yandex.ru', AuthUser=>'info@rplusmgmt.com', AuthPass=>'ckj;ysqgfhjkm', Port => 587);
+}
+
+sub _log {
+  my $msg = shift;
+
+  print LOG localtime . ": " . $msg . "\n";
 }
