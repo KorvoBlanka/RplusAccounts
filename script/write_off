@@ -7,6 +7,8 @@ use Rplus::Modern;
 
 use Rplus::Model::Account;
 use Rplus::Model::Account::Manager;
+use Rplus::Model::Event;
+use Rplus::Model::Event::Manager;
 
 use Rplus::Util::Config;
 
@@ -41,31 +43,28 @@ my $mail_message = <<'END_MESSAGE';
 
 END_MESSAGE
 
-open (LOG, '>>/var/log/rplus/write_off.log');
 
-_log("write_off start");
+log_event("write_off start", 'system');
 
 my $account_iter = Rplus::Model::Account::Manager->get_objects_iterator(query => [del_date => undef]);
 while (my $account = $account_iter->next) {
 
     eval {
 
-        _log("\taccount " . $account->id);
-
         my $balance = $account->balance;
         my $user_count = $account->user_count;
         my $mode = $account->mode;
 
-        my $woc = $config->{'write_off'}->{$account->location_id};
+        my $price = $config->{'price'}->{$account->location_id};
 
         my $write_off = 0;
         if ($balance >= 0) {
             if ($mode eq 'sale') {
-                $write_off = $woc->{'sale_price'} + $woc->{'user_price'} * ($user_count - 1);
+                $write_off = $price->{sale} + $price->{user} * ($user_count - 1);
             } elsif ($mode eq 'rent') {
-                $write_off = $woc->{'rent_price'} + $woc->{'user_price'} * ($user_count - 1);
+                $write_off = $price->{rent} + $price->{user} * ($user_count - 1);
             } else {
-                $write_off = $woc->{'sale_price'} + $woc->{'rent_price'} + $woc->{'user_price'} * ($user_count - 1);
+                $write_off = $price->{sale} + $price->{rent} + $price->{user} * ($user_count - 1);
             }
 
             $account->balance($balance - $write_off);
@@ -75,28 +74,26 @@ while (my $account = $account_iter->next) {
                     if ($DEBUG == 0) {
                       send_email($account->email, 'RplusMgmt', $mail_message);
                     } else {
-                      _log('здесь могла быть ваша реклама');
+                      # здесь могла быть ваша реклама
                     }
                 } or do {
-                    _log($@);
+                    log_event('error: ' . $@, $account->id . '');
                 }
             }
         } else {
 
         }
 
-        _log("\tbalance: " . $account->balance . ' write_off: ' . $write_off);
+        log_event('balance: ' . $account->balance . '; write_off: ' . $write_off, $account->id . '');
         if ($DEBUG == 0) {
           $account->save(changes_only => 1);
         }
     } or do {
-        _log($@);
+      log_event('error: ' . $@, $account->id . '');
     }
 }
 
-_log("write_off done");
-
-close (LOG);
+log_event("write_off done", 'system');
 
 
 sub send_email {
@@ -118,8 +115,11 @@ sub send_email {
     $msg->send('smtp', 'smtp.yandex.ru', AuthUser=>'info@rplusmgmt.com', AuthPass=>'ckj;ysqgfhjkm', Port => 587);
 }
 
-sub _log {
-  my $msg = shift;
-
-  print LOG localtime . ": " . $msg . "\n";
+sub log_event {
+    my $text = shift;
+    my $account = shift;
+    my $event = Rplus::Model::Event->new;
+    $event->text($text);
+    $event->account($account);
+    $event->save(insert => 1);
 }
