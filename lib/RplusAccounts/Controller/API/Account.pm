@@ -4,8 +4,8 @@ use Mojo::Base 'Mojolicious::Controller';
 
 use Rplus::DB;
 
-use Rplus::Model::Account;
 use Rplus::Model::Account::Manager;
+use Rplus::Model::Location::Manager;
 
 my $dbh = Rplus::DB->new_or_cached->dbh;
 
@@ -178,6 +178,8 @@ sub create {
   my $location = Rplus::Model::Location::Manager->get_objects(query => [id => $account->location_id])->[0];
   my $server_name = $location->server_name;
   my $service_url = "http://$server_name/service/create_account";
+
+  say $service_url;
 
   my $tx = $ua->get($service_url, form => {
       email => $account->email,
