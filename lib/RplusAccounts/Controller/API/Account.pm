@@ -175,14 +175,8 @@ sub create {
     $account->save(changes_only => 1);
   }
 
-  my $server_name;
-  if ($account->location_id == 1) {       # khv
-    $server_name = 'khv.rplusmgmt.com';
-  } elsif ($account->location_id == 2) {  # kms
-    $server_name = 'kms.rplusmgmt.com';
-  } elsif ($account->location_id == 3) {  # msk
-    $server_name = 'msk.rplusmgmt.com';
-  }
+  my $location = Rplus::Model::Location::Manager->get_objects(query => [id => $account->location_id])->[0];
+  my $server_name = $location->server_name;
   my $service_url = "http://$server_name/service/create_account";
 
   my $tx = $ua->get($service_url, form => {
@@ -216,14 +210,8 @@ sub list_users {
   my $account = Rplus::Model::Account::Manager->get_objects(query => [id => $id, del_date => undef])->[0];
   return $self->render(json => {error => 'Not Found'}, status => 404) unless $account;
 
-  my $server_name;
-  if ($account->location_id == 1) {       # khv
-    $server_name = 'khv.rplusmgmt.com';
-  } elsif ($account->location_id == 2) {  # kms
-    $server_name = 'kms.rplusmgmt.com';
-  } elsif ($account->location_id == 3) {  # msk
-    $server_name = 'msk.rplusmgmt.com';
-  }
+  my $location = Rplus::Model::Location::Manager->get_objects(query => [id => $account->location_id])->[0];
+  my $server_name = $location->server_name;
   my $service_url = "http://$server_name/service/list_users";
 
   my $tx = $ua->get($service_url, form => {
@@ -242,14 +230,8 @@ sub reset_usr_password {
   my $account = Rplus::Model::Account::Manager->get_objects(query => [id => $id, del_date => undef])->[0];
   return $self->render(json => {error => 'Not Found'}, status => 404) unless $account;
 
-  my $server_name;
-  if ($account->location_id == 1) {       # khv
-    $server_name = 'khv.rplusmgmt.com';
-  } elsif ($account->location_id == 2) {  # kms
-    $server_name = 'kms.rplusmgmt.com';
-  } elsif ($account->location_id == 3) {  # msk
-    $server_name = 'msk.rplusmgmt.com';
-  }
+  my $location = Rplus::Model::Location::Manager->get_objects(query => [id => $account->location_id])->[0];
+  my $server_name = $location->server_name;
   my $service_url = "http://$server_name/service/reset_usr_pwd";
 
   my $tx = $ua->get($service_url, form => {
