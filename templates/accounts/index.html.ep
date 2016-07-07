@@ -1,5 +1,5 @@
 % layout 'default';
-
+% use Rplus::Model::Location::Manager;
 % use Rplus::Model::Account::Manager;
 
 % content_for header => begin
@@ -651,9 +651,10 @@
                 <label for="createAcc_inputLocation" class="col-md-3 control-label">location</label>
                 <div class="col-md-9">
                   <select id="createAcc_inputLocation" name="location_id" class="form-control input-sm">
-                    <option value="1">Хабаровск</option>
-                    <option value="2">Комсомольск</option>
-                    <option value="3">Москва</option>
+                    % my $iter = Rplus::Model::Location::Manager->get_objects_iterator();
+                    % while (my $loc = $iter->next) {
+                    <option value=<%= $loc->id %>><%= $loc->name %></option>
+                    % }
                   </select>
                 </div>
               </div>
