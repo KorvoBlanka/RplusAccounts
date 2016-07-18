@@ -551,6 +551,11 @@
               <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
             </th>
 
+            <th class="" data-index="8" data-sortable="true">Discount&nbsp;
+              <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
+              <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
+            </th>
+
             <th class="" data-index="7" data-sortable="true">Location&nbsp;
               <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
               <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
@@ -578,6 +583,7 @@
             <td class="" data-index="6" data-sortable="true"><%= $x->balance %> rub.</td>
             <td class="" data-index="3" data-sortable="true"><%= $x->user_count %></td>
             <td class="" data-index="4" data-sortable="true"><%= $x->mode %></td>
+            <td class="" data-index="8" data-sortable="true"><%= $x->discount ? $x->discount . '%' : ''  %><br><%= $x->discount_end_date %></td>
             <td class="" data-index="7" data-sortable="true"><%= $x->location->name %></td>
             <td class="" data-index="5" data-sortable="true"><%= $x->reg_date %></td>
           </tr>
@@ -754,6 +760,21 @@
                       <input type="text" class="form-control input-sm" name="balance" id="accountCard_userForm_inputBalance" placeholder="balance rub.">
                     </div>
                   </div>
+
+                  <div class="form-group form-group-sm">
+                    <label for="accountCard_userForm_inputBalance" class="col-md-3 control-label">Discount</label>
+                    <div class="col-md-9">
+                      <input type="text" class="form-control input-sm" name="discount" id="accountCard_userForm_inputDiscount" placeholder="disc. %">
+                    </div>
+                  </div>
+
+                  <div class="form-group form-group-sm">
+                    <label for="accountCard_userForm_inputDiscountEndDate" class="col-md-3 control-label">Disc. end date</label>
+                    <div class="col-md-9">
+                      <input type="text" class="form-control input-sm" name="discount_end_date" id="accountCard_userForm_inputDiscountEndDate" placeholder="YYYY-MM-DD">
+                    </div>
+                  </div>
+
                 </form>
               </div>
             </div>

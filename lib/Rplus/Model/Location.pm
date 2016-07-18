@@ -12,6 +12,7 @@ __PACKAGE__->meta->setup(
         name        => { type => 'varchar' },
         server_name => { type => 'varchar', not_null => 1 },
         add_date    => { type => 'timestamp with time zone', default => 'now()', not_null => 1 },
+        price       => { type => 'scalar', default => '{}', not_null => 1 },
     ],
 
     primary_key_columns => [ 'id' ],

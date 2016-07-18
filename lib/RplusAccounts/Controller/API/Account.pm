@@ -76,6 +76,8 @@ sub get {
             user_count => $account->user_count,
             balance => $account->balance,
             reg_date => $account->reg_date,
+            discount => $account->discount,
+            discount_end_date => $account->discount_end_date,
     };
 
     return $self->render(json => $res);
@@ -120,6 +122,8 @@ sub save {
     my $subdomain = $self->param('subdomain');
     my $user_count = $self->param('user_count');
     my $balance = $self->param('balance');
+    my $discount = $self->param('discount');
+    my $discount_end_date = $self->param('discount_end_date');
 
     my $account;
 
@@ -135,7 +139,8 @@ sub save {
     $account->name($subdomain);
     $account->balance($balance);
     $account->user_count($user_count);
-
+    $account->discount($discount);
+    $account->discount_end_date($discount_end_date);
 
     eval {
         $account->save($account->id ? (changes_only => 1) : (insert => 1));

@@ -14,7 +14,7 @@ use Rplus::Util::Config;
 
 use MIME::Lite;
 use IPC::Open2;
-
+use DateTime;
 use Data::Dumper;
 
 use JSON;
@@ -46,7 +46,7 @@ END_MESSAGE
 
 log_event("write_off start", 'system');
 
-my $account_iter = Rplus::Model::Account::Manager->get_objects_iterator(query => [del_date => undef]);
+my $account_iter = Rplus::Model::Account::Manager->get_objects_iterator(query => [del_date => undef], with_objects => ['location']);
 while (my $account = $account_iter->next) {
 
     eval {
@@ -54,8 +54,8 @@ while (my $account = $account_iter->next) {
         my $balance = $account->balance;
         my $user_count = $account->user_count;
         my $mode = $account->mode;
-
-        my $price = $config->{'price'}->{$account->location_id};
+        my $location = $account->location;
+        my $price = from_json($location->price);
 
         my $write_off = 0;
         if ($balance >= 0) {
@@ -65,6 +65,15 @@ while (my $account = $account_iter->next) {
                 $write_off = $price->{rent} + $price->{user} * ($user_count - 1);
             } else {
                 $write_off = $price->{sale} + $price->{rent} + $price->{user} * ($user_count - 1);
+            }
+
+            if ($account->discount && $account->discount > 0) {
+
+                my $now = DateTime->now();
+                if (!$account->discount_end_date || $account->discount_end_date > $now) {
+                    say 'discount!';
+                    $write_off *= (100 - $account->discount) / 100;
+                }
             }
 
             $account->balance($balance - $write_off);
