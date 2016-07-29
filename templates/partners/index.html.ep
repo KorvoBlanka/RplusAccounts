@@ -1,0 +1,289 @@
+% layout 'default';
+
+% use Rplus::Model::Partner::Manager;
+
+% content_for header => begin
+<style type="text/css">
+  #partnerCard_modal .modal-dialog {
+    width: 720px;
+  }
+
+  #partnersTableWrapper {
+    overflow: scroll;
+  }
+
+  #partnersTable {
+    cursor: pointer;
+    -webkit-user-select: none;
+            user-select: none;
+  }
+
+  #partnersTable > tbody > tr > td {
+    text-align: center;
+  }
+
+  #partnersTable > tbody > tr.selected > td {
+    background-color: #0088cc !important;
+    color: #ffffff;
+  }
+
+  #partnersTable > tbody > tr.selected:hover > td {
+    background-color: #0082c7 !important;
+    color: #ffffff;
+  }
+
+  #partnersTable > tbody > tr.selected > td > a {
+    color: #ffffff;
+  }
+
+  #partnersTable > tbody > tr.blocked > td {
+    background-color: #ff8888;
+    color: #ffffff;
+  }
+
+  #partnersTable > tbody > tr.blocked:hover > td {
+    background-color: #ffaaaa;
+    color: #ffffff;
+  }
+
+</style>
+
+% end
+
+% content_for javascript => begin
+<script type="application/javascript">
+  "use strict";
+
+  var dc_tid;
+  var $modal, $form;
+
+  $form = $('#pertner_form');
+  $modal =
+    $('#partner_modal')
+    .modal({show: false, backdrop: 'static'})
+    .on('shown.bs.modal', function (e) {
+    })
+  ;
+
+  $('[data-action="partner-open"]').click(function (e) {
+    var $selected = $('#partnersTable > tbody > tr.selected');
+    $selected.each(function () {
+      openPartnerCard($(this).data('id'));
+    });
+  });
+
+  $('[data-action="partner-create"]').click(function (e) {
+    openPartnerCard(null);
+  });
+
+  $('[data-action="partner-save"]').click(function() {
+
+      var formData = {};
+      var formArray = $form.serializeArray();
+      for (var i = 0; i < formArray.length; i++) {
+        var x = formArray[i];
+        formData[x.name] = x.value || null;
+      }
+
+      $.ajax({
+        type: "POST",
+        url: "/api/partner/save",
+        data: formData
+      })
+        .done(function (data) {
+          if (data.status == 'success') {
+            $modal.modal('hide');
+          }
+        })
+        .fail(function (jqXHR, textStatus, errorThrown) {
+          alert('An error occurred while processing request.');
+        })
+  });
+
+  function openPartnerCard(id) {
+    if (id) {
+      $.ajax({
+        type: "POST",
+        url: "/api/partner/get",
+        data: {id :id},
+      })
+        .done(function (data, textStatus, jqXHR) {
+          $(':input', $modal).val(null);
+          for (var x in data) {
+            $('[name="' + x + '"]:input', $modal).val(data[x]);
+          }
+          $modal.modal('show');
+        })
+        .fail(function (jqXHR, textStatus, errorThrown) {
+          alert('Cannot open partner card');
+        });
+    } else {
+      $(':input', $modal).val(null);
+      $modal.modal('show');
+    }
+  }
+
+  $('#partnersTable > tbody').on('mousedown', 'tr', function (e) {
+
+    var $this = $(this);
+    var id = $this.data('id');
+    switch (event.which) {
+      case 1:   // lmb
+      dc_tid = setTimeout(function() {
+            var was_selected = $this.hasClass('selected');
+            var $selected = $('#partnersTable > tbody > tr.selected');
+            $selected.removeClass('selected');
+            if (!was_selected) {
+              $this.addClass('selected');
+            }
+        }, 150);
+        break;
+      case 2:    // mmb
+        break;
+      case 3:    // rmb
+        var $selected = $('#partnersTable > tbody > tr.selected');
+        $selected.removeClass('selected');
+        $this.addClass('selected');
+        break;
+      default:
+    }
+  });
+
+</script>
+% end
+
+% content_for modals => begin
+
+<div class="modal" id="partner_modal" tabindex="-1" role="dialog" aria-labelledby="partner_modalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title" id="createAcc_modalLabel">Partner</h4>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-8">
+            <form class="form-horizontal" role="form" id="pertner_form">
+
+              <input type="hidden" name="id" value="">
+
+              <div class="form-group form-group-sm">
+                <label for="partner_inputName" class="col-md-3 control-label">name</label>
+                <div class="col-md-9">
+                  <input type="email" class="form-control input-sm" name="name" id="partner_inputEmail" placeholder="name" required>
+                </div>
+              </div>
+
+              <div class="form-group form-group-sm">
+                <label for="partner_inputCode" class="col-md-3 control-label">code</label>
+                <div class="col-md-9">
+                  <input type="text" class="form-control input-sm" name="code" id="partner_inputCode" placeholder="code" required>
+                </div>
+              </div>
+
+              <div class="form-group form-group-sm">
+                <label for="partner_inputBalanceBonus" class="col-md-3 control-label">b. bonus</label>
+                <div class="col-md-9">
+                  <input type="text" class="form-control input-sm" name="balance_bonus" id="partner_inputBalanceBonus" placeholder="" required>
+                </div>
+              </div>
+
+              <div class="form-group form-group-sm">
+                <label for="partner_inputActive" class="col-md-3 control-label">active</label>
+                <div class="col-md-9">
+                  <input type="text" class="form-control input-sm" name="active" id="partner_inputActive" placeholder="0/1" required>
+                </div>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      </div><!-- /.modal-body -->
+      <div class="modal-footer">
+        <button class="btn btn-primary btn-sm" data-action="partner-save"><span class="glyphicon glyphicon-ok"></span>&nbsp;Save</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+% end
+
+<div class="row">
+<div class="col-lg-12">
+  <form role="search">
+    <div class="form-group">
+      <span class="twitter-typeahead" style="position: relative; display: inline-block; width: 100%">
+        <input class="tt-hint" type="text" autocomplete="off" spellcheck="off" disabled="" style="position: absolute; top: 0px; left: 0px; border-color: transparent; box-shadow: none; background-attachment: scroll; background-clip: border-box; background-color: rgb(255, 255, 255); background-image: none; background-origin: padding-box; background-size: auto; background-position: 0% 0%; background-repeat: repeat repeat;">
+          <input type="text" class="form-control input-sm tt-query" id="searchQuery" name="q" placeholder="Search" autocomplete="off" x-webkit-speech="" spellcheck="false" dir="auto" style="position: relative; vertical-align: top; background-color: transparent;">
+          <span style="position: absolute; left: -9999px; visibility: hidden; white-space: nowrap; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11.818181991577148px; font-style: normal; font-variant: normal; font-weight: 400; word-spacing: 0px; letter-spacing: 0px; text-indent: 0px; text-rendering: auto; text-transform: none;">
+          </span>
+          <span class="tt-dropdown-menu" style="position: absolute; top: 100%; left: 0px; z-index: 100; display: none;"></span>
+      </span>
+    </div>
+  </form>
+</div>
+</div>
+
+<div class="row">
+  <div class="col-lg-12">
+    <div class="table-responsive" id="partnersTableWrapper" style="height: 349.1761474609375px;">
+      <table class="table table-bordered table-condensed table-striped table-hover" id="partnersTable">
+        <thead>
+          <tr>
+
+            <th class="" data-index="0" data-sortable="false">id
+              <span class="pull-right hidden glyphicon glyphicon-arrow -down" data-order="asc"></span>
+              <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
+            </th>
+
+            <th class="" data-index="1" data-sortable="true">name
+              <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
+              <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
+            </th>
+
+            <th class="" data-index="2" data-sortable="true">code
+              <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
+              <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
+            </th>
+
+            <th class="" data-index="2" data-sortable="true">bonus
+              <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
+              <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
+            </th>
+
+            <th class="" data-index="3" data-sortable="true">active
+              <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
+              <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
+            </th>
+
+          </tr>
+        </thead>
+        <tbody>
+          % my $iter = Rplus::Model::Partner::Manager->get_objects_iterator(sort_by => 'id desc');
+          % while (my $x = $iter->next) {
+              <tr  class="" data-id="<%= $x->id %>" class="">
+                <td class="" data-index="0" data-sortable="true"><%= $x->id %></td>
+                <td class="" data-index="1" data-sortable="true"><%= $x->name %></td>
+                <td class="" data-index="1" data-sortable="true"><%= $x->code %></td>
+                <td class="" data-index="1" data-sortable="true"><%= $x->balance_bonus %></td>
+                <td class="" data-index="3" data-sortable="true"><%= $x->active %></td>
+              </tr>
+          % }
+
+        </tbody>
+
+    </table>
+    </div>
+  </div>
+</div>
+
+<nav class="navbar navbar-default navbar-fixed-bottom">
+  <div class="container">
+    <ul class="nav navbar-nav">
+      <li><a href="#" data-action="partner-create"><span class="glyphicon glyphicon-plus"></span>&nbspAdd</a></li>
+      <li><a href="#" data-action="partner-delete"><span class="glyphicon glyphicon-minus"></span>&nbspDelete</a></li>
+      <li><a href="#" data-action="partner-open"><span class="glyphicon glyphicon-folder-open"></span>&nbspOpen</a></li>
+    </ul>
+  </div>
+</nav> <!-- /.navbar -->

@@ -556,6 +556,11 @@
               <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
             </th>
 
+            <th class="" data-index="8" data-sortable="true">Partner ID&nbsp;
+              <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
+              <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
+            </th>
+
             <th class="" data-index="7" data-sortable="true">Location&nbsp;
               <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
               <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
@@ -584,6 +589,7 @@
             <td class="" data-index="3" data-sortable="true"><%= $x->user_count %></td>
             <td class="" data-index="4" data-sortable="true"><%= $x->mode %></td>
             <td class="" data-index="8" data-sortable="true"><%= $x->discount ? $x->discount . '%' : ''  %><br><%= $x->discount_end_date %></td>
+            <td class="" data-index="4" data-sortable="true"><%= $x->partner_id %></td>
             <td class="" data-index="7" data-sortable="true"><%= $x->location->name %></td>
             <td class="" data-index="5" data-sortable="true"><%= $x->reg_date %></td>
           </tr>
