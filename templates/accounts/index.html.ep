@@ -531,7 +531,7 @@
               <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
             </th>
 
-            <th class="" data-index="2" data-sortable="true">Subdomain&nbsp;
+            <th class="" data-index="2" data-sortable="true">Name&nbsp;
               <span class="pull-right hidden glyphicon glyphicon-arrow-down" data-order="asc"></span>
               <span class="pull-right hidden glyphicon glyphicon-arrow-up" data-order="desc"></span>
             </th>
@@ -584,7 +584,7 @@
           % }
             <td class=""><%= $x->id %></td>
             <td class="" data-index="1" data-sortable="true"><%= $x->email %> <span id="tag_for_<%= $x->id %>" data-ct="<%= $x->color_tag %>" class="color-tag tag-<%= $x->color_tag %>"></span></td>
-            <td class="" data-index="2" data-sortable="true"><a target="_blank" href="http://<%= $x->name %>.rplusmgmt.com"><%= $x->name %>.rplusmgmt.com</a></td>
+            <td class="" data-index="2" data-sortable="true"><%= $x->name %></td>
             <td class="" data-index="6" data-sortable="true"><%= $x->balance %> rub.</td>
             <td class="" data-index="3" data-sortable="true"><%= $x->user_count %></td>
             <td class="" data-index="4" data-sortable="true"><%= $x->mode %></td>
